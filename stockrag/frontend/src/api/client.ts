@@ -11,8 +11,8 @@ import {
   API_TIMEOUT_MS,
   RECOMMENDATIONS_ENDPOINT,
   DEFAULT_TOP_K,
-} from "../constants/api.ts";
-import { MOCK_RECOMMENDATIONS } from "../constants/mock.ts";
+  MOCK_RECOMMENDATIONS,
+} from "../constants";
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
