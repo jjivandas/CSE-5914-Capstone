@@ -1,0 +1,71 @@
+# ========================
+# Raw & Processed Data
+# ========================
+data/raw/
+data/processed/
+data/embeddings/
+
+# ========================
+# Vector DB
+# ========================
+chroma_db/
+
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+.venv/
+venv/
+env/
+
+# ========================
+# Environment & Secrets
+# ========================
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+
+# ========================
+# IDE & Editors
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========================
+# OS Files
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Node / Frontend
+# ========================
+node_modules/
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+
+# ========================
+# Jupyter
+# ========================
+.ipynb_checkpoints/
+
+# ========================
+# Logs & Misc
+# ========================
+*.log
+*.tmp
+*.bak
