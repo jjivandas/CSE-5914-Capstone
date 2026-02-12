@@ -61,31 +61,37 @@ export function useChat() {
     );
   };
 
-  const handleSuccess = (userMsgId: string, resp: RecommendationResponse) => {
-    markMessageSent(userMsgId);
-    addMessage(createAssistantMsg(resp));
-    setError(null);
-  };
+  const handleSuccess = useCallback(
+    (userMsgId: string, resp: RecommendationResponse) => {
+      markMessageSent(userMsgId);
+      addMessage(createAssistantMsg(resp));
+      setError(null);
+    },
+    [],
+  );
 
-  const handleFailure = (userMsgId: string) => {
+  const handleFailure = useCallback((userMsgId: string) => {
     markMessageError(userMsgId);
     setError("Failed to fetch recommendations. Please try again.");
-  };
-
-  const sendMessage = useCallback(async (text: string) => {
-    const userMsg = createMsg("user", text, "sending");
-    addMessage(userMsg);
-    setIsLoading(true);
-
-    try {
-      const resp = await fetchRecommendations({ query: text });
-      handleSuccess(userMsg.id, resp);
-    } catch {
-      handleFailure(userMsg.id);
-    } finally {
-      setIsLoading(false);
-    }
   }, []);
+
+  const sendMessage = useCallback(
+    async (text: string) => {
+      const userMsg = createMsg("user", text, "sending");
+      addMessage(userMsg);
+      setIsLoading(true);
+
+      try {
+        const resp = await fetchRecommendations({ query: text });
+        handleSuccess(userMsg.id, resp);
+      } catch {
+        handleFailure(userMsg.id);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [handleSuccess, handleFailure],
+  );
 
   return {
     messages,
