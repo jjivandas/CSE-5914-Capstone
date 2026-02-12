@@ -2,6 +2,7 @@ import { Box, MantineProvider } from "@mantine/core";
 import { theme } from "./styles/theme";
 import { MainLayout } from "./components/layout/MainLayout";
 import { MessageList } from "./components/chat/MessageList";
+import { WelcomeScreen } from "./components/chat/WelcomeScreen";
 import { ChatInput } from "./components/chat/ChatInput";
 import { useChat } from "./hooks/useChat";
 import "@mantine/core/styles.css";
@@ -26,7 +27,11 @@ function App() {
           <MainLayout
             footer={<ChatInput onSend={sendMessage} isLoading={isLoading} />}
           >
-            <MessageList messages={messages} isLoading={isLoading} />
+            {messages.length === 0 ? (
+              <WelcomeScreen onChipClick={sendMessage} />
+            ) : (
+              <MessageList messages={messages} isLoading={isLoading} />
+            )}
           </MainLayout>
         </Box>
       </Box>
