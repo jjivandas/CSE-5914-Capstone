@@ -12,11 +12,11 @@ interface MetricProps {
 function Metric({ label, value }: MetricProps) {
   if (!value) return null;
   return (
-    <Stack gap={2}>
-      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
+    <Stack gap={1}>
+      <Text size="10px" c="dimmed" tt="uppercase" fw={700}>
         {label}
       </Text>
-      <Text size="sm" fw={500}>
+      <Text size="xs" fw={500} c="white">
         {value}
       </Text>
     </Stack>
@@ -25,17 +25,17 @@ function Metric({ label, value }: MetricProps) {
 
 function CardHeader({ stock }: { stock: StockProfile }) {
   return (
-    <Group justify="space-between" mb="md">
-      <div>
-        <Text size="lg" fw={700} component="span">
+    <Group justify="space-between" mb="xs" wrap="nowrap">
+      <div style={{ minWidth: 0 }}>
+        <Text size="md" fw={700} component="span" c="white" truncate>
           {stock.ticker}
         </Text>
-        <Text size="sm" c="dimmed" component="span" ml="xs">
+        <Text size="xs" c="dimmed" component="span" ml="xs" truncate>
           {stock.companyName}
         </Text>
       </div>
-      <Badge color="green" variant="light" size="lg">
-        {stock.matchPercent}% Match
+      <Badge color="green" variant="light" size="sm">
+        {stock.matchPercent}%
       </Badge>
     </Group>
   );
@@ -43,7 +43,7 @@ function CardHeader({ stock }: { stock: StockProfile }) {
 
 function CardMetrics({ stock }: { stock: StockProfile }) {
   return (
-    <SimpleGrid cols={{ base: 2, xs: 3 }} spacing="sm" verticalSpacing="md">
+    <SimpleGrid cols={3} spacing="xs" verticalSpacing="xs">
       <Metric label="Price" value={stock.peRatio} />
       <Metric label="Sector" value={stock.sector} />
       <Metric label="Industry" value={stock.industry} />
@@ -57,11 +57,11 @@ function CardMetrics({ stock }: { stock: StockProfile }) {
 function CardReasoning({ reason }: { reason?: string }) {
   if (!reason) return null;
   return (
-    <Stack gap="xs" mt="lg" pt="md" style={{ borderTop: "1px solid var(--mantine-color-gray-2)" }}>
-      <Text size="xs" c="dimmed" fw={700} tt="uppercase">
+    <Stack gap={4} mt="sm" pt="xs" style={{ borderTop: "1px solid var(--mantine-color-dark-5)" }}>
+      <Text size="10px" c="dimmed" fw={700} tt="uppercase">
         Why it fits
       </Text>
-      <Text size="sm" c="dark.3" lh={1.5}>
+      <Text size="xs" c="gray.3" lh={1.4}>
         {reason}
       </Text>
     </Stack>
@@ -78,12 +78,14 @@ export function StockCard({ stock }: StockCardProps) {
   return (
     <Card
       withBorder
-      padding="lg"
+      padding="sm"
       radius="md"
+      bg="dark.8"
       className={classes.card}
       component="a"
       href={stock.detailsUrl || "#"}
       target="_blank"
+      style={{ borderColor: 'var(--mantine-color-dark-5)' }}
     >
       <CardHeader stock={stock} />
       <CardMetrics stock={stock} />

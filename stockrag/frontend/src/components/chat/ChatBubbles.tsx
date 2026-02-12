@@ -7,9 +7,9 @@ import type { AssistantContent } from "../../api/types";
 export function UserMessage({ text }: { text?: string }) {
   if (!text) return null;
   return (
-    <Box className="fade-in" style={{ alignSelf: "flex-end", maxWidth: "80%" }}>
-      <Paper p="md" radius="md" bg="blue.1">
-        <Text size="sm" c="dark.9">
+    <Box className="fade-in" style={{ alignSelf: "flex-end", maxWidth: "70%" }}>
+      <Paper p="md" radius="md" bg="stockragGreen.9">
+        <Text size="sm" c="white">
           {text}
         </Text>
       </Paper>
@@ -22,7 +22,7 @@ export function UserMessage({ text }: { text?: string }) {
 function StockGrid({ stocks }: { stocks?: AssistantContent["stocks"] }) {
   if (!stocks?.length) return null;
   return (
-    <SimpleGrid cols={{ base: 1, md: 2 }} mt="md">
+    <SimpleGrid cols={{ base: 1, xl: 2 }} mt="md">
       {stocks.map((stock) => (
         <StockCard key={stock.ticker} stock={stock} />
       ))}
@@ -35,9 +35,9 @@ function StockGrid({ stocks }: { stocks?: AssistantContent["stocks"] }) {
 export function AssistantMessage({ content }: { content?: AssistantContent }) {
   if (!content) return null;
   return (
-    <Box className="fade-in" style={{ alignSelf: "flex-start", width: "100%" }}>
-      <Paper p="md" radius="md" bg="gray.0" withBorder>
-        <Text size="sm" mb={content.stocks?.length ? "sm" : 0} c="dark.9">
+    <Box className="fade-in" style={{ alignSelf: "flex-start", maxWidth: "70%" }}>
+      <Paper p="md" radius="md" bg="dark.7" withBorder style={{ borderColor: 'var(--mantine-color-dark-6)' }}>
+        <Text size="sm" mb={content.stocks?.length ? "sm" : 0} c="white">
           {content.text}
         </Text>
         <StockGrid stocks={content.stocks} />
