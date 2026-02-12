@@ -8,9 +8,7 @@ export function AppHeader() {
       <Group justify="space-between">
         <Group gap={16}>
           <Logo />
-          <Title order={1} size={20} c="white" style={{ letterSpacing: '-0.5px' }}>
-            StockRAG
-          </Title>
+          <Title order={1} size={20} c="white" lts={-0.5}>StockRAG</Title>
         </Group>
         <StatusBadge />
       </Group>

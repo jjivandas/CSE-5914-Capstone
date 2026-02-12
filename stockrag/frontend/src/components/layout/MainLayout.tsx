@@ -1,7 +1,13 @@
-import { Paper, Stack, Box } from '@mantine/core';
+import { Paper, Box } from '@mantine/core';
 import { AppHeader } from '../header/AppHeader';
+import { ReactNode } from 'react';
 
-export function MainLayout() {
+interface MainLayoutProps {
+  children: ReactNode;
+  footer: ReactNode;
+}
+
+export function MainLayout({ children, footer }: MainLayoutProps) {
   return (
     <Paper
       w="100%"
@@ -19,11 +25,11 @@ export function MainLayout() {
       }}
     >
       <AppHeader />
-      <Stack flex={1} bg="dark.9" p={30} style={{ overflowY: 'auto' }} gap={24}>
-        {/* Chat Placeholder */}
-      </Stack>
+      <Box flex={1} bg="dark.9" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </Box>
       <Box px={30} py={20} bg="dark.9" style={{ borderTop: '1px solid var(--mantine-color-dark-7)' }}>
-        {/* Input Placeholder */}
+        {footer}
       </Box>
     </Paper>
   );
