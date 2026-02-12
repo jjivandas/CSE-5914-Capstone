@@ -1,4 +1,4 @@
-import { Center, MantineProvider } from "@mantine/core";
+import { Box, MantineProvider } from "@mantine/core";
 import { theme } from "./styles/theme";
 import { MainLayout } from "./components/layout/MainLayout";
 import { MessageList } from "./components/chat/MessageList";
@@ -12,13 +12,24 @@ function App() {
 
   return (
     <MantineProvider theme={theme} defaultColorScheme="dark">
-      <Center h="100vh" bg="dark.9" p="md">
-        <MainLayout
-          footer={<ChatInput onSend={sendMessage} isLoading={isLoading} />}
-        >
-          <MessageList messages={messages} />
-        </MainLayout>
-      </Center>
+      <Box
+        h="100vh"
+        bg="dark.9"
+        p="md"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Box w="100%" maw={1400} h="90vh">
+          <MainLayout
+            footer={<ChatInput onSend={sendMessage} isLoading={isLoading} />}
+          >
+            <MessageList messages={messages} />
+          </MainLayout>
+        </Box>
+      </Box>
     </MantineProvider>
   );
 }

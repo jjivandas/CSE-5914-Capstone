@@ -7,13 +7,13 @@
 body {
   background: var(--stockrag-bg);
   color: #e5e7eb;
-  height: 100vh;
   margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  overflow: hidden; /* Prevent body scroll if container handles it */
+  /* Layout moved to App.tsx */
+}
+
+#root {
+  width: 100%;
+  height: 100%;
 }
 
 /* Scrollbar Customization */
