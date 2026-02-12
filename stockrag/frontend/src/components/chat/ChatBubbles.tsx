@@ -7,7 +7,7 @@ import type { AssistantContent } from "../../api/types";
 export function UserMessage({ text }: { text?: string }) {
   if (!text) return null;
   return (
-    <Box style={{ alignSelf: "flex-end", maxWidth: "80%" }}>
+    <Box className="fade-in" style={{ alignSelf: "flex-end", maxWidth: "80%" }}>
       <Paper p="md" radius="md" bg="blue.1">
         <Text size="sm" c="dark.9">
           {text}
@@ -35,7 +35,7 @@ function StockGrid({ stocks }: { stocks?: AssistantContent["stocks"] }) {
 export function AssistantMessage({ content }: { content?: AssistantContent }) {
   if (!content) return null;
   return (
-    <Box style={{ alignSelf: "flex-start", width: "100%" }}>
+    <Box className="fade-in" style={{ alignSelf: "flex-start", width: "100%" }}>
       <Paper p="md" radius="md" bg="gray.0" withBorder>
         <Text size="sm" mb={content.stocks?.length ? "sm" : 0} c="dark.9">
           {content.text}

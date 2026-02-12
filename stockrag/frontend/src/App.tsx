@@ -26,7 +26,7 @@ function App() {
           <MainLayout
             footer={<ChatInput onSend={sendMessage} isLoading={isLoading} />}
           >
-            <MessageList messages={messages} />
+            <MessageList messages={messages} isLoading={isLoading} />
           </MainLayout>
         </Box>
       </Box>
