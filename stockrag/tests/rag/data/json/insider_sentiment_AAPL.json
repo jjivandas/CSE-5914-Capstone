@@ -1,0 +1,61 @@
+{
+  "data": [
+    {
+      "symbol": "AAPL",
+      "year": 2025,
+      "month": 2,
+      "change": 7127,
+      "mspr": 22.709747
+    },
+    {
+      "symbol": "AAPL",
+      "year": 2025,
+      "month": 4,
+      "change": -422128,
+      "mspr": -31.173235
+    },
+    {
+      "symbol": "AAPL",
+      "year": 2025,
+      "month": 5,
+      "change": -4486,
+      "mspr": -100
+    },
+    {
+      "symbol": "AAPL",
+      "year": 2025,
+      "month": 8,
+      "change": -125256,
+      "mspr": -100
+    },
+    {
+      "symbol": "AAPL",
+      "year": 2025,
+      "month": 9,
+      "change": 587183,
+      "mspr": 100
+    },
+    {
+      "symbol": "AAPL",
+      "year": 2025,
+      "month": 10,
+      "change": -527282,
+      "mspr": -31.315598
+    },
+    {
+      "symbol": "AAPL",
+      "year": 2025,
+      "month": 11,
+      "change": -7502,
+      "mspr": -100
+    },
+    {
+      "symbol": "AAPL",
+      "year": 2026,
+      "month": 2,
+      "change": 0,
+      "mspr": 0
+    }
+  ],
+  "symbol": "AAPL"
+}

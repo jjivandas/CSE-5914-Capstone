@@ -1,0 +1,102 @@
+date,exchange,name,numberOfShares,price,status,symbol,totalSharesValue
+2026-02-27,NASDAQ Global,"Generate Biomedicines, Inc.",25000000.0,15.00-17.00,expected,GENB,488750000.0
+2026-02-27,NASDAQ Global,Iron Dome Acquisition I Corp.,20000000.0,10.00,expected,IDACU,230000000.0
+2026-02-27,NASDAQ Global,Brookline Capital Acquisition Corp II,10000000.0,10.00,expected,BCACU,115000000.0
+2026-02-27,NASDAQ Global,QDRO Acquisition Corp.,20000000.0,10.00,expected,QADRU,230000000.0
+2026-02-26,NASDAQ Global,Fortress Value Acquisition Corp. V,25000000.0,10.00,expected,FVAV,250000000.0
+2026-02-26,NASDAQ Global,TRG Latin America Acquisitions Corp.,20000000.0,10.00,expected,TRGSU,200000000.0
+2026-02-26,NYSE,APEX Tech Acquisition Inc.,10000000.0,10.00,expected,TRADU,100000000.0
+2026-02-25,,APEX Global Solutions Ltd,,,withdrawn,,
+2026-02-25,NYSE,MOZAYYX Acquisition Corp.,26100000.0,10.00,priced,MZYXU,261000000.0
+2026-02-24,,AIGO HOLDING Ltd,,,withdrawn,,
+2026-02-24,NASDAQ Global,Clearthink 1 Acquisition Corp.,12500000.0,10.00,priced,CTAAU,125000000.0
+2026-02-24,,Dune Acquisition Corp III,,,filed,,172500000.0
+2026-02-23,,INNOCAN PHARMA Corp,,,withdrawn,,
+2026-02-20,NASDAQ Capital,Rank One Computing Corp,4000000.0,6.00,priced,ROC,24000000.0
+2026-02-19,,Clear Street Group Inc.,,,withdrawn,,
+2026-02-19,NASDAQ Global,Averin Capital Acquisition Corp.,25000000.0,10.00,priced,ACAAU,250000000.0
+2026-02-19,NASDAQ Global,PALOMA ACQUISITION CORP I,15000000.0,10.00,priced,PALOU,150000000.0
+2026-02-19,NASDAQ Global,Abony Acquisition Corp. I,20000000.0,10.00,priced,AACOU,200000000.0
+2026-02-19,NASDAQ Capital,"20/20 Biolabs, Inc.",15164724.0,,priced,AIDX,0.0
+2026-02-19,,"Medical 21, Inc.",,,filed,MAVG,31363632.0
+2026-02-19,,Forefront Tech Holdings Acquisition Corp,,,filed,FTHAU,115000000.0
+2026-02-18,NASDAQ Capital,SharonAI Holdings Inc.,4166666.0,30.00,priced,SHAZ,124999980.0
+2026-02-18,NASDAQ Global,Armada Acquisition Corp. III,22500000.0,10.00,priced,AACIU,225000000.0
+2026-02-18,,NewHold Investment Corp IV,,,filed,NHIVU,201250000.0
+2026-02-17,,"Liftoff Mobile, Inc.",,,withdrawn,,
+2026-02-17,,"EIR Biopharma, Inc.",,,filed,,21562500.0
+2026-02-17,,Plutonian Acquisition Corp. II,,,filed,PLUNU,115000000.0
+2026-02-17,,Dynamix Corp IV,,,filed,DYNXU,201250000.0
+2026-02-13,,C&K Group Ltd,,,withdrawn,,
+2026-02-13,,LEMENG HOLDINGS LTD,,,withdrawn,,
+2026-02-13,NASDAQ Global,Willow Lane Acquisition Corp. II,12500000.0,10.00,priced,WLIIU,125000000.0
+2026-02-13,NASDAQ Global,RF Acquisition Corp III,10000000.0,10.00,priced,RFAMU,100000000.0
+2026-02-13,,C&K Group Ltd,,,filed,,21562500.0
+2026-02-13,,Hacker Interstellar Inc.,,,filed,SOUD,15000000.0
+2026-02-13,,Solar Strategy Holdings Ltd,,,filed,SSTR,287500000.0
+2026-02-13,NASDAQ Global,Aeon Acquisition I Corp.,25000000.0,10.00,expected,AESPU,287500000.0
+2026-02-12,NASDAQ Capital,ARKO Petroleum Corp.,11111111.0,18.00,priced,APC,199999998.0
+2026-02-12,NASDAQ Global,Proem Acquisition Corp. I,13000000.0,10.00,priced,PAACU,130000000.0
+2026-02-12,NASDAQ Global,Braiin Ltd,68696076.0,,priced,BRAI,0.0
+2026-02-12,NASDAQ Global,HCM IV Acquisition Corp.,25000000.0,10.00,priced,HACQU,250000000.0
+2026-02-12,NYSE,XFLH Capital Corp,10000000.0,10.00,priced,XFLHU,100000000.0
+2026-02-12,,PayPay Corp,,,filed,PAYP,100000000.0
+2026-02-12,,Beta FinTech Holdings Ltd,,,filed,BTFT,25875000.0
+2026-02-12,,"BIOVENTRIX, INC.",,,filed,BVXX,17250000.0
+2026-02-11,NASDAQ Global,Columbus Circle Capital Corp II,20000000.0,10.00,priced,CMIIU,200000000.0
+2026-02-11,NASDAQ Global Select,"SOLV Energy, Inc.",20500000.0,25.00,priced,MWH,512500000.0
+2026-02-11,NYSE,AGI Inc,20000000.0,12.00,priced,AGBK,240000000.0
+2026-02-11,NASDAQ Global,Spartacus Acquisition Corp. II,20000000.0,10.00,priced,TMTSU,200000000.0
+2026-02-11,NASDAQ Global,D. Boral Acquisition I Corp.,25000000.0,10.00,priced,DBCAU,250000000.0
+2026-02-11,NASDAQ Global,Idea Acquisition Corp.,35000000.0,10.00,priced,IACOU,350000000.0
+2026-02-11,,"Hong qi bang bang kai man science & technology development Co., Ltd",,,filed,HQBB,1000000.0
+2026-02-11,,"Xiamen Customized Elf Technology Co., Ltd.",,,filed,JLZQ,20000000.0
+2026-02-11,,BHAV Acquisition Corp,,,filed,BHAVU,115000000.0
+2026-02-10,NASDAQ Global,Spring Valley Acquisition Corp. IV,20000000.0,10.00,priced,SVIVU,200000000.0
+2026-02-10,NYSE MKT,Jaguar Uranium Corp.,6250000.0,4.00,priced,JAGU,25000000.0
+2026-02-10,,CALM Chain International Ltd,,,filed,CCIL,16100000.0
+2026-02-10,,Quantum Leap Acquisition Corp,,,filed,QLEPU,230000000.0
+2026-02-06,NASDAQ Global Select,"SpyGlass Pharma, Inc.",9375000.0,16.00,priced,SGP,150000000.0
+2026-02-06,NASDAQ Global Select,Agomab Therapeutics NV,12500000.0,16.00,priced,AGMB,200000000.0
+2026-02-06,NASDAQ Global,Cambridge Acquisition Corp.,20000000.0,10.00,priced,CAQUU,200000000.0
+2026-02-06,NYSE,"Once Upon a Farm, PBC",10997209.0,18.00,priced,OFRM,197949762.0
+2026-02-06,NASDAQ Global,SPACSphere Acquisition Corp.,15000000.0,10.00,priced,SSACU,150000000.0
+2026-02-06,,BAO Holding Ltd.,,,filed,BAO,21562500.0
+2026-02-06,,Feline Culture Holdings Ltd,,,filed,,21993750.0
+2026-02-06,,Gravity AI,,,filed,,21562500.0
+2026-02-05,NYSE,"Bob's Discount Furniture, Inc.",19450000.0,17.00,priced,BOBS,330650000.0
+2026-02-05,NYSE,"Forgent Power Solutions, Inc.",56000000.0,27.00,priced,FPS,1512000000.0
+2026-02-05,NASDAQ Global Select,"Eikon Therapeutics, Inc.",21177600.0,18.00,priced,EIKN,381196800.0
+2026-02-05,NASDAQ Global,"Cantor Equity Partners VI, Inc.",10000000.0,10.00,priced,CEPS,100000000.0
+2026-02-05,NASDAQ Global,Hennessy Capital Investment Corp. VIII,21000000.0,10.00,priced,HCICU,210000000.0
+2026-02-05,,"LIBERTY DEFENSE HOLDINGS, LTD.",,,filed,DETX,17250000.0
+2026-02-05,,Kensington Capital Acquisition Corp. VI,,,filed,KCACU,230000000.0
+2026-02-04,NYSE,"VeraDermics, Inc",15077647.0,17.00,priced,MANE,256319999.0
+2026-02-04,NYSE,Colombier Acquisition Corp. III,26000000.0,10.00,priced,CLBRU,260000000.0
+2026-02-04,NASDAQ Global,"Our Bond, Inc.",34073681.0,,priced,OBAI,0.0
+2026-02-04,,APEIRON ACQUISITION VEHICLE I,,,filed,APNU,80500000.0
+2026-02-03,NYSE,Iris Acquisition Corp II,15000000.0,10.00,priced,IRABU,150000000.0
+2026-02-02,NASDAQ Capital,"Polaryx Therapeutics, Inc.",47343297.0,,priced,PLYX,0.0
+2026-02-02,NYSE,White Pearl Acquisition Corp.,10000000.0,10.00,priced,WPACU,100000000.0
+2026-02-02,,"Salspera, Inc.",,,filed,TKVA,104266656.0
+2026-02-02,,"SYNO Capital Group, Inc.",,,filed,SYNO,1000000.0
+2026-02-02,,"Pono Capital Four, Inc.",,,filed,PONOU,172500000.0
+2026-02-02,,"Swarmer, Inc",,,filed,SWMR,20700000.0
+2026-02-02,,Metals Acquisition Corp. II,,,filed,MTALU,230000000.0
+2026-01-30,NASDAQ Global,M Evo Global Acquisition Corp II,27000000.0,10.00,priced,MEVOU,270000000.0
+2026-01-30,NASDAQ Global,Muzero Acquisition Corp,17500000.0,10.00,priced,MUZEU,175000000.0
+2026-01-30,NASDAQ Global,"VenHub Global, Inc.",15547669.0,,priced,VHUB,0.0
+2026-01-30,NASDAQ Capital,Newbridge Acquisition Ltd,5000000.0,10.00,priced,NBRGU,50000000.0
+2026-01-29,,GalaxyEdge Acquisition Corp,,,withdrawn,,
+2026-01-29,,"Bounty Minerals, Inc.",,,withdrawn,,
+2026-01-29,NASDAQ Global Select,PicS N.V.,22857143.0,19.00,priced,PICS,434285717.0
+2026-01-29,NYSE MKT,United Acquisition Corp. I,10000000.0,10.00,priced,UACU,100000000.0
+2026-01-29,NYSE,"Yellowstone Midco Holdings II, LLC",18500000.0,34.00,priced,YSS,629000000.0
+2026-01-29,NASDAQ,Xsolla SPAC 1,20000000.0,10.00,priced,XSLLU,200000000.0
+2026-01-29,NASDAQ Global Select,Ethos Technologies Inc.,10526315.0,19.00,priced,LIFE,199999985.0
+2026-01-29,NYSE,K2 Capital Acquisition Corp,12000000.0,10.00,priced,KTWOU,120000000.0
+2026-01-28,NASDAQ Global,KRAKacquisition Corp,30000000.0,10.00,priced,KRAQU,300000000.0
+2026-01-28,NASDAQ Global,Space Asset Acquisition Corp.,20000000.0,10.00,priced,SAAQU,200000000.0
+2026-01-28,NASDAQ Global,"Public Policy Holding Company, Inc.",4150000.0,12.25,priced,PPHC,50837500.0
+2026-01-28,,Sky Acquisition Group,,,filed,SKAIU,172500000.0
+2026-01-28,,V Capital Consulting Group Ltd,,,filed,VCCG,17250000.0
