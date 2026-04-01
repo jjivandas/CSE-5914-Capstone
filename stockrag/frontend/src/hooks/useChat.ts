@@ -38,6 +38,15 @@ function createAssistantMsg(response: RecommendationResponse): ChatMessage {
   };
 }
 
+function createAssistantTextMsg(text: string): ChatMessage {
+  return {
+    id: generateId(),
+    role: "assistant",
+    createdAt: Date.now(),
+    content: { text },
+  };
+}
+
 // --- Hook ---
 
 export function useChat() {
@@ -72,7 +81,9 @@ export function useChat() {
 
   const handleFailure = useCallback((userMsgId: string) => {
     markMessageError(userMsgId);
-    setError("Failed to fetch recommendations. Please try again.");
+    const message = "Failed to fetch recommendations. Please try again.";
+    addMessage(createAssistantTextMsg(message));
+    setError(message);
   }, []);
 
   const sendMessage = useCallback(

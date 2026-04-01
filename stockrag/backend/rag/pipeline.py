@@ -66,8 +66,11 @@ def stream(query: str, top_k: int = DEFAULT_TOP_K) -> Generator[str, None, None]
     yield from stream_response(query, context)
 
 
+_SKIP_KEYS = {"cik", "entity_name", "ticker", "exchange", "doc_type", "doc_id", "fy", "concept"}
+
+
 def get_sources(docs: List[SearchResult]) -> List[dict]:
-    """Convert retrieved docs to a list of source citations."""
+    """Convert retrieved docs to source citations with financial data."""
     seen: dict[str, dict] = {}
     for d in docs:
         if d.cik not in seen:
@@ -77,7 +80,23 @@ def get_sources(docs: List[SearchResult]) -> List[dict]:
                 "ticker": d.ticker,
                 "exchange": d.exchange,
                 "doc_types": [],
+                "financials": {},
+                "text_snippet": "",
             }
         if d.doc_type not in seen[d.cik]["doc_types"]:
             seen[d.cik]["doc_types"].append(d.doc_type)
+
+        # Collect ALL financial metadata — prefer profile, fallback to snapshot
+        if d.doc_type == "company_profile" or (
+            d.doc_type == "annual_snapshot" and not seen[d.cik]["financials"]
+        ):
+            fin = {k: v for k, v in d.metadata.items()
+                   if k not in _SKIP_KEYS and v is not None}
+            if fin:
+                seen[d.cik]["financials"] = fin
+
+        # Capture profile text for whyFits extraction
+        if d.doc_type == "company_profile" and not seen[d.cik]["text_snippet"]:
+            seen[d.cik]["text_snippet"] = d.text[:500]
+
     return list(seen.values())

@@ -42,8 +42,14 @@ def _user_prompt(query: str, context: str) -> str:
     )
 
 
+_cached_client: genai.Client | None = None
+
+
 def _client() -> genai.Client:
-    return genai.Client(api_key=GOOGLE_API_KEY)
+    global _cached_client
+    if _cached_client is None:
+        _cached_client = genai.Client(api_key=GOOGLE_API_KEY)
+    return _cached_client
 
 
 def _config() -> types.GenerateContentConfig:

@@ -87,6 +87,12 @@ def run(args: argparse.Namespace) -> None:
         index = json.load(f)
 
     companies = index["companies"]
+    if args.cik:
+        cik_filter = {str(cik).zfill(10) for cik in args.cik}
+        companies = [
+            company for company in companies
+            if str(company.get("cik", "")).zfill(10) in cik_filter
+        ]
     if args.limit:
         companies = companies[: args.limit]
 
@@ -220,6 +226,24 @@ def run(args: argparse.Namespace) -> None:
             if concept:
                 meta["concept"] = concept
 
+            # Propagate ALL numeric/string financial metadata into ChromaDB.
+            # Skip keys already set above and internal-only keys.
+            _SKIP_KEYS = {"cik", "entity_name", "ticker", "exchange", "doc_type",
+                          "doc_id", "fy", "concept", "description_source",
+                          "taxonomy", "accession_number", "form", "filed_date",
+                          "period_key", "fp", "start_date", "end_date",
+                          "period_type", "last_filing_date", "most_recent_fy"}
+            for fk, val in meta_raw.items():
+                if fk in _SKIP_KEYS or fk in meta:
+                    continue
+                if val is None or val == "":
+                    continue
+                # ChromaDB metadata supports str, int, float, bool only
+                if isinstance(val, (int, float, bool)):
+                    meta[fk] = val
+                elif isinstance(val, str):
+                    meta[fk] = val
+
             ids, docs_buf, metas_buf = buffers[col_name]
             ids.append(doc_id)
             docs_buf.append(text)
@@ -264,6 +288,8 @@ def _parse() -> argparse.Namespace:
     p.add_argument("--force", action="store_true", help="Re-index even if already indexed")
     p.add_argument("--include-facts", action="store_true", help="Also index fact_sentence documents (slow)")
     p.add_argument("--limit", type=int, default=0, help="Only process first N companies (0 = all)")
+    p.add_argument("--cik", action="append", default=[],
+                   help="Only process the specified CIK. Repeat for multiple companies.")
     return p.parse_args()
 
 

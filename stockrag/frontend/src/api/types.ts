@@ -4,22 +4,35 @@ export type Role = "user" | "assistant";
 
 //TODO: Adjust as API Contract changes
 export interface StockProfile {
+  cik: string;
   companyName: string;
   ticker: string;
   exchange?: string;        // "NASDAQ"
 
-  matchPercent: number;     // 0..100
-
   sector?: string;          // "Healthcare Technology"
-  industry?: string;        // "Medical Robotics"
-
-  marketCap?: string;       // "$2.4B" (string so backend can format)
-  employees?: number;       // 850
-  founded?: number;         // 2009
-  peRatio?: string;         // "32.5" or "—"
-
   whyFits?: string;
-  detailsUrl?: string;
+  sourceDocTypes?: string[];
+
+  // Financial metrics from most recent filing
+  revenue?: number | null;
+  netIncome?: number | null;
+  profitMargin?: string | null;
+  grossMargin?: string | null;
+  epsD?: number | null;
+  totalAssets?: number | null;
+  cash?: number | null;
+  equity?: number | null;
+  grossProfit?: number | null;
+  operatingIncome?: number | null;
+  totalLiabilities?: number | null;
+  ocf?: number | null;
+  ocfMargin?: string | null;
+  currentRatio?: string | null;
+  fiscalYear?: number | null;
+
+  // Live price / external link
+  currentPrice?: number | null;
+  edgarUrl?: string | null;
 }
 
 export interface AssistantContent {
