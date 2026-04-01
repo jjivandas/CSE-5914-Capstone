@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StockRAG Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: #94a3b8;
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+
+    .search-bar {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 1px solid #2d3748;
+      background: #1a202c;
+      color: #e2e8f0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-bar input:focus {
+      border-color: #4f8ef7;
+    }
+
+    .search-bar button {
+      padding: 14px 24px;
+      border-radius: 10px;
+      border: none;
+      background: #4f8ef7;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .search-bar button:hover { background: #3b7de8; }
+    .search-bar button:disabled { background: #2d3748; cursor: not-allowed; }
+
+    .suggestions {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid #2d3748;
+      background: #1a202c;
+      color: #94a3b8;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .chip:hover { border-color: #4f8ef7; color: #e2e8f0; }
+
+    #output {
+      width: 100%;
+      max-width: 960px;
+      margin-top: 32px;
+    }
+
+    .spinner {
+      text-align: center;
+      color: #4f8ef7;
+      font-size: 0.9rem;
+      padding: 20px;
+      display: none;
+    }
+
+    .answer-box {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 24px;
+      line-height: 1.7;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+    }
+
+    .answer-box h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4f8ef7;
+      margin-bottom: 14px;
+    }
+
+    /* Render basic markdown bold */
+    .answer-text strong { font-weight: 700; color: #fff; }
+
+    .sources-box {
+      margin-top: 20px;
+    }
+
+    .sources-box h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+
+    .source-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .source-card {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .source-card .name {
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .source-card .ticker {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.75rem;
+      background: #2d3748;
+      color: #4f8ef7;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .source-card .exchange {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .error-box {
+      background: #2d1b1b;
+      border: 1px solid #c53030;
+      border-radius: 10px;
+      padding: 16px 20px;
+      color: #fc8181;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>StockRAG</h1>
+    <p>Ask questions about publicly listed companies using SEC EDGAR data</p>
+  </header>
+
+  <div class="search-bar">
+    <input id="queryInput" type="text" placeholder="e.g. Which EV companies have the best margins?" />
+    <button id="askBtn" onclick="ask()">Ask</button>
+  </div>
+
+  <div class="suggestions">
+    <span class="chip" onclick="setQuery('Best GPU and semiconductor companies')">GPU &amp; semiconductors</span>
+    <span class="chip" onclick="setQuery('Which EV companies have the highest revenue growth?')">EV revenue growth</span>
+    <span class="chip" onclick="setQuery('Top cloud computing companies by revenue')">Cloud computing</span>
+    <span class="chip" onclick="setQuery('Companies with strong cash flow and low debt')">Strong cash flow</span>
+    <span class="chip" onclick="setQuery('Best performing pharmaceutical companies')">Pharmaceuticals</span>
+  </div>
+
+  <div id="output">
+    <div class="spinner" id="spinner">Thinking...</div>
+  </div>
+
+  <script>
+    const API = "http://localhost:8000/api/recommendations";
+
+    document.getElementById("queryInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") ask();
+    });
+
+    function setQuery(text) {
+      document.getElementById("queryInput").value = text;
+      ask();
+    }
+
+    function renderMarkdown(text) {
+      // Very minimal markdown: bold, headers, bullet points
+      return text
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/^#{1,3} (.+)$/gm, "<strong>$1</strong>")
+        .replace(/^[\*\-] (.+)$/gm, "• $1");
+    }
+
+    async function ask() {
+      const query = document.getElementById("queryInput").value.trim();
+      if (!query) return;
+
+      const btn = document.getElementById("askBtn");
+      const spinner = document.getElementById("spinner");
+      const output = document.getElementById("output");
+
+      btn.disabled = true;
+      spinner.style.display = "block";
+      output.innerHTML = "";
+      output.appendChild(spinner);
+
+      try {
+        const res = await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || res.statusText);
+        }
+
+        const data = await res.json();
+
+        spinner.style.display = "none";
+
+        // Answer
+        const answerBox = document.createElement("div");
+        answerBox.className = "answer-box";
+        const answer = data.answer || data.message || "";
+        answerBox.innerHTML = `<h3>Answer</h3><div class="answer-text">${renderMarkdown(answer)}</div>`;
+        output.appendChild(answerBox);
+
+        // Sources (supports both old "sources" and new "recommendations" format)
+        const sources = data.sources || data.recommendations || [];
+        if (sources.length > 0) {
+          const sourcesBox = document.createElement("div");
+          sourcesBox.className = "sources-box";
+
+          const title = document.createElement("h3");
+          title.textContent = `Sources — ${sources.length} companies`;
+          sourcesBox.appendChild(title);
+
+          const grid = document.createElement("div");
+          grid.className = "source-grid";
+
+          for (const s of sources) {
+            const name = s.entity_name || s.companyName || "";
+            const ticker = s.ticker || "";
+            const exchange = s.exchange || "";
+            const card = document.createElement("div");
+            card.className = "source-card";
+            card.innerHTML = `
+              <div class="name" title="${name}">${name}</div>
+              ${ticker ? `<span class="ticker">${ticker}</span>` : ""}
+              ${exchange ? `<div class="exchange">${exchange}</div>` : ""}
+            `;
+            grid.appendChild(card);
+          }
+
+          sourcesBox.appendChild(grid);
+          output.appendChild(sourcesBox);
+        }
+
+      } catch (err) {
+        spinner.style.display = "none";
+        const errBox = document.createElement("div");
+        errBox.className = "error-box";
+        errBox.textContent = "Error: " + err.message;
+        output.appendChild(errBox);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+
+</body>
+</html>

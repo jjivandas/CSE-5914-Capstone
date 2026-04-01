@@ -1,112 +1,76 @@
-#new models.py
+from __future__ import annotations
+
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime
 
 
 class RecommendationRequest(BaseModel):
-    """
-    Request model matching frontend types
-    Frontend: RecommendationRequest in src/api/types.ts
-    """
-    query: str = Field(
-        ..., 
-        description="Natural language query for stock recommendations",
-        example="EV car companies"
-    )
+    query: str = Field(..., min_length=1, description="Natural-language stock query")
     topK: Optional[int] = Field(
         default=5,
         ge=1,
-        le=50,
-        description="Number of recommendations to return (default: 5)"
+        le=20,
+        description="Maximum number of companies to surface",
     )
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "query": "EV car companies",
-                "topK": 5
-            }
-        }
 
 
 class StockRecommendation(BaseModel):
-    """
-    Individual stock recommendation matching frontend types
-    Frontend: StockRecommendation in src/api/types.ts
-    """
-    # Identity
-    ticker: str = Field(..., description="Stock ticker symbol", example="TSLA")
-    name: str = Field(..., description="Company name", example="Tesla, Inc.")
-    
-    # The Core Feature (RAG)
-    whyFits: str = Field(
-        ...,
-        description="LLM-generated explanation for why this stock matches the query",
-        example="Tesla is the market leader in EV..."
+    cik: str = Field(..., description="SEC company identifier")
+    companyName: str = Field(..., description="Legal entity name")
+    ticker: str = Field(..., description="Ticker symbol when available")
+    exchange: Optional[str] = Field(default=None, description="Listing exchange")
+    sector: Optional[str] = Field(default=None, description="Sector if known")
+    whyFits: Optional[str] = Field(
+        default=None,
+        description="Optional per-company rationale when available",
     )
-    
-    # Context (Minimum viable stats)
-    currentPrice: float = Field(..., description="Current stock price", example=245.67)
-    sector: str = Field(..., description="Stock sector for color-coding", example="Consumer Cyclical")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "ticker": "TSLA",
-                "name": "Tesla, Inc.",
-                "whyFits": "Tesla is the market leader in EV with strong growth potential",
-                "currentPrice": 245.67,
-                "sector": "Consumer Cyclical"
-            }
-        }
+    sourceDocTypes: List[str] = Field(
+        default_factory=list,
+        description="Types of retrieved documents used for this company",
+    )
+    # Financial metrics from most recent filing
+    revenue: Optional[float] = Field(default=None, description="Total revenue in USD")
+    netIncome: Optional[float] = Field(default=None, description="Net income in USD")
+    profitMargin: Optional[str] = Field(default=None, description="Profit margin percentage")
+    grossMargin: Optional[str] = Field(default=None, description="Gross margin percentage")
+    epsD: Optional[float] = Field(default=None, description="Diluted EPS")
+    totalAssets: Optional[float] = Field(default=None, description="Total assets in USD")
+    cash: Optional[float] = Field(default=None, description="Cash and equivalents in USD")
+    equity: Optional[float] = Field(default=None, description="Stockholders equity in USD")
+    ocfMargin: Optional[str] = Field(default=None, description="Operating cash flow margin")
+    currentRatio: Optional[str] = Field(default=None, description="Current ratio")
+    grossProfit: Optional[float] = Field(default=None, description="Gross profit in USD")
+    operatingIncome: Optional[float] = Field(default=None, description="Operating income in USD")
+    totalLiabilities: Optional[float] = Field(default=None, description="Total liabilities in USD")
+    ocf: Optional[float] = Field(default=None, description="Operating cash flow in USD")
+    fiscalYear: Optional[int] = Field(default=None, description="Most recent fiscal year")
+    # Live price / external link
+    currentPrice: Optional[float] = Field(default=None, description="Live stock price from Finnhub")
+    edgarUrl: Optional[str] = Field(default=None, description="SEC EDGAR filings page")
 
 
 class RecommendationResponse(BaseModel):
-    """
-    Response model matching frontend types
-    Frontend: RecommendationResponse in src/api/types.ts
-    """
+    message: str = Field(..., description="Assistant response grounded in retrieved data")
     recommendations: List[StockRecommendation] = Field(
-        ...,
-        description="List of stock recommendations"
+        default_factory=list,
+        description="Retrieved companies included in the response",
     )
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "recommendations": [
-                    {
-                        "ticker": "TSLA",
-                        "name": "Tesla, Inc.",
-                        "whyFits": "Tesla is the market leader in EV technology",
-                        "currentPrice": 245.67,
-                        "sector": "Consumer Cyclical"
-                    },
-                    {
-                        "ticker": "RIVN",
-                        "name": "Rivian Automotive, Inc.",
-                        "whyFits": "Rivian is an emerging EV manufacturer focusing on trucks and SUVs",
-                        "currentPrice": 18.92,
-                        "sector": "Consumer Cyclical"
-                    }
-                ]
-            }
-        }
+
+class ServiceStatus(BaseModel):
+    status: str
+    message: str
 
 
-# Health check and stats models (for backend endpoints)
 class HealthCheckResponse(BaseModel):
-    """Health check response model"""
-    status: str = Field(..., description="Overall health status")
-    timestamp: str = Field(..., description="Timestamp of health check")
-    services: Dict[str, Dict[str, str]] = Field(..., description="Status of individual services")
+    status: str
+    services: dict[str, ServiceStatus]
 
 
 class StatsResponse(BaseModel):
-    """Stats response model"""
-    total_stocks: int = Field(..., description="Total number of stocks in database")
-    last_update: Optional[str] = Field(None, description="Last update timestamp")
-    database_name: str = Field(..., description="Name of the database collection")
-    timestamp: str = Field(..., description="Current timestamp")
+    total_stocks: int
+    profiles_indexed: int
+    snapshots_indexed: int
+    descriptions_indexed: int
+    database_name: str

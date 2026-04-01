@@ -29,6 +29,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import time
 import urllib.parse
 from datetime import date
@@ -230,6 +231,54 @@ FINNHUB_PROFILE_URL = "https://finnhub.io/api/v1/stock/profile2"
 _WIKI_DELAY = 0.05     # Wikipedia allows up to 200 req/s; 20 req/s is conservative
 _FINNHUB_DELAY = 1.05  # free tier: 60 req/min
 
+_ENTITY_STOPWORDS = {
+    "the", "and", "of", "inc", "inc.", "corp", "corp.", "corporation", "co",
+    "co.", "company", "companies", "group", "holdings", "holding", "plc",
+    "llc", "ltd", "limited", "international", "technologies", "technology",
+    "systems", "solutions", "ventures",
+}
+
+
+def _normalize_words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def _identity_tokens(entity_name: str, ticker: str) -> set[str]:
+    tokens = {
+        token for token in _normalize_words(entity_name)
+        if len(token) >= 3 and token not in _ENTITY_STOPWORDS
+    }
+    if ticker:
+        tokens.add(ticker.lower())
+    return tokens
+
+
+def _description_matches(entity_name: str, ticker: str, title: str, description: str) -> bool:
+    """
+    Accept a fetched description only if it appears to refer to the target company.
+    This prevents generic or unrelated Wikipedia/Finnhub pages from poisoning the index.
+    """
+    tokens = _identity_tokens(entity_name, ticker)
+    if not tokens:
+        return False
+
+    haystack = " ".join(part for part in [title, description] if part).lower()
+    matches = {token for token in tokens if token in haystack}
+
+    # Require a stronger signal for longer company names; ticker alone is acceptable.
+    if ticker and ticker.lower() in matches:
+        return True
+    if len(matches) >= 2:
+        return True
+
+    entity_words = _normalize_words(entity_name)
+    if entity_words:
+        joined = " ".join(entity_words[:3])
+        if joined and joined in haystack:
+            return True
+
+    return False
+
 
 class DescriptionFetcher:
     """
@@ -270,7 +319,10 @@ class DescriptionFetcher:
     def get(self, cik: str, entity_name: str, ticker: str) -> str:
         """Return a description string (may be empty if nothing found)."""
         if not self._force and cik in self._cache:
-            return self._cache[cik].get("description", "")
+            cached = self._cache[cik].get("description", "")
+            if _description_matches(entity_name, ticker, "", cached):
+                return cached
+            log.warning("Discarding mismatched cached description for %s (%s)", entity_name, cik)
 
         description = ""
         source = "none"
@@ -302,19 +354,16 @@ class DescriptionFetcher:
     def _try_wikipedia(self, entity_name: str, ticker: str) -> str:
         """Try a couple of title strategies then fall back to search."""
         # Only try 2 direct lookups before going to search (reduce delay)
-        candidates = [
-            entity_name,
-            f"{entity_name} (company)",
-        ]
+        candidates = [entity_name, f"{entity_name} (company)"]
         for title in candidates:
-            extract = self._wiki_fetch_summary(title)
+            extract = self._wiki_fetch_summary(entity_name, ticker, title)
             if extract:
                 return extract
 
         # Fallback: full-text search → fetch top result
-        return self._wiki_search(entity_name)
+        return self._wiki_search(entity_name, ticker)
 
-    def _wiki_fetch_summary(self, title: str) -> str:
+    def _wiki_fetch_summary(self, entity_name: str, ticker: str, title: str) -> str:
         """GET /page/summary/{title}. Return non-disambiguation extract or ''."""
         self._throttle_wiki()
         url = WIKIPEDIA_REST_URL.format(title=urllib.parse.quote(title, safe=""))
@@ -330,9 +379,12 @@ class DescriptionFetcher:
             return ""
         extract: str = data.get("extract", "")
         # Reject very short extracts (likely stubs or wrong page)
-        return extract if len(extract) > 80 else ""
+        page_title = data.get("title", title)
+        if len(extract) <= 80:
+            return ""
+        return extract if _description_matches(entity_name, ticker, page_title, extract) else ""
 
-    def _wiki_search(self, entity_name: str) -> str:
+    def _wiki_search(self, entity_name: str, ticker: str) -> str:
         """Search Wikipedia and fetch the top result's summary."""
         self._throttle_wiki()
         try:
@@ -355,7 +407,10 @@ class DescriptionFetcher:
         results = resp.json().get("query", {}).get("search", [])
         for result in results:
             title = result.get("title", "")
-            extract = self._wiki_fetch_summary(title)
+            snippet = result.get("snippet", "")
+            if not _description_matches(entity_name, ticker, title, snippet):
+                continue
+            extract = self._wiki_fetch_summary(entity_name, ticker, title)
             if extract:
                 return extract
         return ""
@@ -382,7 +437,9 @@ class DescriptionFetcher:
         if resp.status_code != 200:
             return ""
         data = resp.json()
-        return data.get("description", "") or ""
+        description = data.get("description", "") or ""
+        name = data.get("name", "") or ""
+        return description if _description_matches(name or ticker, ticker, name, description) else ""
 
     def _throttle_finnhub(self) -> None:
         elapsed = time.monotonic() - self._last_finnhub_call
@@ -416,12 +473,20 @@ def pivot_annual_metrics(
     if fy_df.empty:
         return {}
 
-    # Index: (concept, unit) → {fy: value}  (using most recently filed value)
-    # Since is_preferred=True, there's at most 1 row per (concept, unit, fy).
+    # Index: (concept, unit) → {fy: value}
+    # Multiple rows may exist per (concept, unit, fy) because SEC filings
+    # include comparative prior-year data.  Keep the value whose end_date
+    # is latest (most likely the current-year figure for that FY filing).
     lookup: dict[tuple[str, str], dict[int, float]] = {}
+    _best_end: dict[tuple[str, str, int], str] = {}  # (concept, unit, fy) → end_date
     for _, row in fy_df.iterrows():
         key = (row["concept"], row["unit"])
-        lookup.setdefault(key, {})[int(row["fy"])] = float(row["value"])
+        fy = int(row["fy"])
+        end = str(row.get("end_date", "") or "")
+        prev_end = _best_end.get((*key, fy), "")
+        if end >= prev_end:
+            lookup.setdefault(key, {})[fy] = float(row["value"])
+            _best_end[(*key, fy)] = end
 
     all_fy = sorted({int(r) for r in fy_df["fy"].dropna().unique()})
     result: dict[int, dict[str, tuple[float, str]]] = {fy: {} for fy in all_fy}
@@ -444,8 +509,8 @@ def pivot_annual_metrics(
                             if slot_key not in result.get(fy, {}):
                                 result.setdefault(fy, {})[slot_key] = (val, u)
                         break
-            # If we found values for this slot from this concept, stop trying fallbacks
-            if any(slot_key in result.get(fy, {}) for fy in all_fy):
+            # Only stop trying fallback concepts when ALL fiscal years are filled
+            if all(slot_key in result.get(fy, {}) for fy in all_fy):
                 break
 
     # Remove years that have no data at all
@@ -798,8 +863,10 @@ def run(
     description_cache: Path | None = None,
     finnhub_key: str = "",
     force_descriptions: bool = False,
+    ciks: list[str] | None = None,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
+    cik_filter = {str(cik).zfill(10) for cik in (ciks or [])}
 
     # 1a. Set up description fetcher
     if description_cache is None:
@@ -820,6 +887,13 @@ def run(
         row["cik"]: row
         for _, row in entity_df.iterrows()
     }
+    if cik_filter:
+        entity_dict = {
+            cik: row
+            for cik, row in entity_dict.items()
+            if str(cik).zfill(10) in cik_filter
+        }
+        log.info("Filtered to %d requested companies", len(entity_dict))
 
     # 3. Load concepts dimension (tiny — label lookup)
     log.info("Loading concepts table...")
@@ -986,6 +1060,8 @@ def main() -> None:
                         help="Output directory for per-company JSON files")
     parser.add_argument("--force", action="store_true",
                         help="Regenerate even if output already exists")
+    parser.add_argument("--cik", action="append", default=[],
+                        help="Only process the specified CIK. Repeat for multiple companies.")
     parser.add_argument("--max-years", type=int, default=5,
                         help="Number of most recent fiscal years to include (default: 5)")
     parser.add_argument("--finnhub-key", type=str,
@@ -1020,6 +1096,7 @@ def main() -> None:
         description_cache=args.description_cache,
         finnhub_key=args.finnhub_key,
         force_descriptions=args.force_descriptions,
+        ciks=args.cik,
     )
 
 

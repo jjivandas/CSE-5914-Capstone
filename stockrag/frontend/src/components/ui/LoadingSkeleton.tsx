@@ -3,7 +3,7 @@ import { Box, Paper, Skeleton, Stack, Group } from "@mantine/core";
 export function LoadingSkeleton() {
   return (
     <Box style={{ alignSelf: "flex-start", width: "100%" }} className="fade-in">
-      <Paper p="md" radius="md" bg="gray.0" withBorder>
+      <Paper p="md" radius="md" bg="dark.7" withBorder style={{ borderColor: 'var(--mantine-color-dark-6)' }}>
         <Stack gap="xs">
           <Skeleton height={12} width="70%" radius="xl" />
           <Skeleton height={12} width="90%" radius="xl" />

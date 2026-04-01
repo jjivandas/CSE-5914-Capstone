@@ -11,7 +11,6 @@ import {
   API_TIMEOUT_MS,
   RECOMMENDATIONS_ENDPOINT,
   DEFAULT_TOP_K,
-  MOCK_RECOMMENDATIONS,
 } from "../constants";
 
 export const apiClient: AxiosInstance = axios.create({
@@ -29,10 +28,6 @@ function buildRecommendationPayload(
   };
 }
 
-function buildMockFallback(): RecommendationResponse {
-  return { ...MOCK_RECOMMENDATIONS };
-}
-
 async function postRecommendations(
   payload: RecommendationRequest,
 ): Promise<RecommendationResponse> {
@@ -47,9 +42,5 @@ export async function fetchRecommendations(
   request: RecommendationRequest,
 ): Promise<RecommendationResponse> {
   const payload = buildRecommendationPayload(request);
-  try {
-    return await postRecommendations(payload);
-  } catch {
-    return buildMockFallback();
-  }
+  return postRecommendations(payload);
 }
