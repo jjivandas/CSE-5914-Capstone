@@ -146,3 +146,25 @@ def search(query: str, top_k: int = DEFAULT_TOP_K) -> List[SearchResult]:
             merged.extend(snaps[:1])
 
     return merged[:top_k * 3]
+
+
+def get_profile_by_cik(cik: str) -> SearchResult | None:
+    """Fetch a company's profile doc directly by CIK (for financial metadata)."""
+    if not collection_exists(PROFILES_COLLECTION):
+        return None
+    col = get_collection(PROFILES_COLLECTION)
+    results = col.get(where={"cik": cik}, include=["documents", "metadatas"], limit=1)
+    if not results["ids"]:
+        return None
+    meta = results["metadatas"][0]
+    return SearchResult(
+        doc_id=meta.get("doc_id", ""),
+        text=results["documents"][0],
+        doc_type=meta.get("doc_type", "company_profile"),
+        cik=cik,
+        entity_name=meta.get("entity_name", ""),
+        ticker=meta.get("ticker", ""),
+        exchange=meta.get("exchange", ""),
+        distance=0.0,
+        metadata=meta,
+    )
