@@ -1,2 +1,29 @@
 stockrag/frontend/src/App.css
 stockrag/frontend/src/index.css
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Data (too large for git)
+stockrag/companyfacts/
+stockrag/data/processed/
+stockrag/data/rag/
+stockrag/chroma_db/
+
+# IDE / OS
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Codex
+stockrag/.codex
+
+# Misc
+*.png
