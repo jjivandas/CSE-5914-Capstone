@@ -8,7 +8,6 @@ body {
   background: var(--stockrag-bg);
   color: #e5e7eb;
   margin: 0;
-  /* Layout moved to App.tsx */
 }
 
 #root {
@@ -28,6 +27,7 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #2a2a2a;
   border-radius: 4px;
+  transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -47,5 +47,21 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
+  animation: fadeIn 0.3s ease-out both;
+}
+
+/* Staggered animation support — set animationDelay inline per element */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.35s ease-out both;
 }

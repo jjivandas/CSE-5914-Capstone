@@ -232,7 +232,7 @@ def run(args: argparse.Namespace) -> None:
                           "doc_id", "fy", "concept", "description_source",
                           "taxonomy", "accession_number", "form", "filed_date",
                           "period_key", "fp", "start_date", "end_date",
-                          "period_type", "last_filing_date", "most_recent_fy"}
+                          "period_type", "last_filing_date"}
             for fk, val in meta_raw.items():
                 if fk in _SKIP_KEYS or fk in meta:
                     continue

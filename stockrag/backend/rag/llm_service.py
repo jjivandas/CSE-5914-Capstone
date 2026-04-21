@@ -32,14 +32,29 @@ _DISCLAIMER = (
 )
 
 
-def _user_prompt(query: str, context: str) -> str:
-    return (
-        f"## User Query\n{query}\n\n"
-        f"## Retrieved Financial Context\n{context}\n\n"
+def _user_prompt(
+    query: str, context: str, conversation_history: list | None = None
+) -> str:
+    parts: list[str] = []
+
+    if conversation_history:
+        parts.append("## Conversation History")
+        for msg in conversation_history[-10:]:
+            label = "User" if msg.role == "user" else "Assistant"
+            text = msg.content[:500] if msg.role == "assistant" else msg.content
+            parts.append(f"**{label}:** {text}")
+        parts.append("")
+
+    parts.append(f"## User Query\n{query}\n")
+    parts.append(f"## Retrieved Financial Context\n{context}\n")
+    parts.append(
         "Please answer the user's query based on the context above. "
+        "Use conversation history (if present) to resolve references like "
+        "'they', 'those stocks', 'the first one', etc. "
         "If the context doesn't contain enough information to fully answer, "
         "say so and share what you do know."
     )
+    return "\n".join(parts)
 
 
 _cached_client: genai.Client | None = None
@@ -59,12 +74,14 @@ def _config() -> types.GenerateContentConfig:
     )
 
 
-def stream_response(query: str, context: str) -> Generator[str, None, None]:
+def stream_response(
+    query: str, context: str, conversation_history: list | None = None
+) -> Generator[str, None, None]:
     """Yield text tokens as they stream from Gemini."""
     client = _client()
     for chunk in client.models.generate_content_stream(
         model=LLM_MODEL,
-        contents=_user_prompt(query, context),
+        contents=_user_prompt(query, context, conversation_history),
         config=_config(),
     ):
         if chunk.text:
@@ -73,31 +90,41 @@ def stream_response(query: str, context: str) -> Generator[str, None, None]:
     yield _DISCLAIMER
 
 
-def get_response(query: str, context: str) -> str:
+def get_response(
+    query: str, context: str, conversation_history: list | None = None
+) -> str:
     """Non-streaming version — returns full response text."""
     client = _client()
     response = client.models.generate_content(
         model=LLM_MODEL,
-        contents=_user_prompt(query, context),
+        contents=_user_prompt(query, context, conversation_history),
         config=_config(),
     )
     return (response.text or "") + _DISCLAIMER
 
 
-def expand_query(query: str) -> str:
+def expand_query(query: str, prior_context: str | None = None) -> str:
     """
     Rewrite a natural-language query into search terms likely to appear in
     SEC EDGAR filings and company descriptions.
 
-    E.g. "GPU companies" → "semiconductor graphics processing unit NVIDIA AMD
+    E.g. "GPU companies" -> "semiconductor graphics processing unit NVIDIA AMD
     computing hardware technology revenue"
     """
+    context_hint = ""
+    if prior_context:
+        context_hint = (
+            f"\nPrevious conversation context: {prior_context}\n"
+            "Use this to resolve vague references in the query.\n"
+        )
+
     prompt = (
         "Convert the following investment query into a short list of search keywords "
         "that would match SEC EDGAR company filings, industry descriptions, product "
         "categories, and financial data. Include company names, sector terms, product "
         "types, and financial metrics if relevant. "
         "Return only comma-separated keywords on a single line, no explanation.\n\n"
+        f"{context_hint}"
         f"Query: {query}"
     )
     try:
@@ -110,6 +137,55 @@ def expand_query(query: str) -> str:
         return expanded if expanded else query
     except Exception:
         return query
+
+
+def detect_topic_shift(
+    new_query: str, conversation_history: list | None
+) -> bool:
+    """
+    Return True if the new query is a fresh topic (no prior context should be
+    carried over), False if it's a continuation of the previous turn.
+
+    Uses a single cheap Gemini call comparing the previous USER message to the
+    new query. On any failure, returns True — the safer default given the
+    current over-anchoring behavior.
+    """
+    if not conversation_history:
+        return True
+
+    last_user_msg = None
+    for msg in reversed(conversation_history):
+        if msg.role == "user":
+            last_user_msg = msg.content
+            break
+    if not last_user_msg:
+        return True
+
+    prompt = (
+        "You are a topic-shift detector for a financial Q&A system.\n"
+        "Decide whether the user's NEW query is a CONTINUATION of the previous "
+        "query or a SHIFT to a different topic.\n\n"
+        "Rules:\n"
+        "- CONTINUE: follow-up questions, asking for more detail, referencing "
+        "previous results with pronouns (they, those, which one, the first), "
+        "asking to compare previous results with another company.\n"
+        "- SHIFT: the new query names a different sector, a different universe "
+        "of companies, or an unrelated question. If the sector or company set "
+        "is clearly different, return SHIFT even if both are 'tech'.\n\n"
+        f"Previous query: {last_user_msg}\n"
+        f"New query: {new_query}\n\n"
+        "Reply with exactly one word: CONTINUE or SHIFT"
+    )
+    try:
+        response = _client().models.generate_content(
+            model=LLM_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(max_output_tokens=4),
+        )
+        answer = (response.text or "").strip().upper()
+        return "SHIFT" in answer
+    except Exception:
+        return True
 
 
 def rerank_candidates(query: str, candidates: "List[SearchResult]", top_n: int) -> list[str]:

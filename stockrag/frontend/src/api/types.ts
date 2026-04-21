@@ -2,6 +2,11 @@
 
 export type Role = "user" | "assistant";
 
+export interface ChatHistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 //TODO: Adjust as API Contract changes
 export interface StockProfile {
   cik: string;
@@ -58,7 +63,7 @@ export interface ChatMessage {
 export interface RecommendationRequest {
   query: string;
   topK?: number;
-  sessionId?: string;
+  conversationHistory?: ChatHistoryMessage[];
 }
 
 /** response <- backend */

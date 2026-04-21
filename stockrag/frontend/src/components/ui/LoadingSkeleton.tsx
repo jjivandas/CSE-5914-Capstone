@@ -1,19 +1,49 @@
-import { Box, Paper, Skeleton, Stack, Group } from "@mantine/core";
+import { useState, useEffect } from "react";
+import { Box, Group, Loader, Paper, Text } from "@mantine/core";
+import { IconSparkles } from "@tabler/icons-react";
+
+const PHASES = [
+  "Searching SEC filings...",
+  "Analyzing companies...",
+  "Generating response...",
+];
 
 export function LoadingSkeleton() {
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhase((prev) => Math.min(prev + 1, PHASES.length - 1));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <Box style={{ alignSelf: "flex-start", width: "100%" }} className="fade-in">
-      <Paper p="md" radius="md" bg="dark.7" withBorder style={{ borderColor: 'var(--mantine-color-dark-6)' }}>
-        <Stack gap="xs">
-          <Skeleton height={12} width="70%" radius="xl" />
-          <Skeleton height={12} width="90%" radius="xl" />
-          <Skeleton height={12} width="40%" radius="xl" />
-          <Group mt="sm">
-             <Skeleton height={100} width="48%" radius="md" />
-             <Skeleton height={100} width="48%" radius="md" />
+    <Box style={{ alignSelf: "flex-start", maxWidth: "85%" }} className="fade-in">
+      <Group gap="sm" align="flex-start" wrap="nowrap">
+        <Box
+          p={6}
+          mt={2}
+          bg="stockragGreen.9"
+          style={{ borderRadius: "50%", flexShrink: 0 }}
+        >
+          <IconSparkles size={16} color="var(--mantine-color-stockragGreen-4)" />
+        </Box>
+        <Paper
+          p="md"
+          radius="md"
+          bg="dark.7"
+          withBorder
+          style={{ borderColor: "var(--mantine-color-dark-6)" }}
+        >
+          <Group gap="sm">
+            <Loader size="xs" color="stockragGreen" type="dots" />
+            <Text size="sm" c="dimmed" fw={500}>
+              {PHASES[phase]}
+            </Text>
           </Group>
-        </Stack>
-      </Paper>
+        </Paper>
+      </Group>
     </Box>
   );
 }

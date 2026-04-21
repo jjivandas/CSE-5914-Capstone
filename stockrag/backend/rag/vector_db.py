@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 from dataclasses import dataclass, field
 from typing import List
 
@@ -12,6 +13,7 @@ from config import (
     DEFAULT_TOP_K,
     DESCRIPTIONS_COLLECTION,
     EMBEDDING_MODEL,
+    FISCAL_YEAR_LOOKBACK,
     PROFILES_COLLECTION,
     SNAPSHOTS_COLLECTION,
 )
@@ -70,18 +72,24 @@ def collection_count(name: str) -> int:
 
 
 # ── search ─────────────────────────────────────────────────────────────────────
-def _query_collection(name: str, query: str, n_results: int) -> List[SearchResult]:
+def _query_collection(
+    name: str, query: str, n_results: int, where: dict | None = None
+) -> List[SearchResult]:
     if not collection_exists(name):
         return []
     col = get_collection(name)
     if col.count() == 0:
         return []
 
-    results = col.query(
-        query_texts=[query],
-        n_results=min(n_results, col.count()),
-        include=["documents", "metadatas", "distances"],
-    )
+    query_kwargs = {
+        "query_texts": [query],
+        "n_results": min(n_results, col.count()),
+        "include": ["documents", "metadatas", "distances"],
+    }
+    if where:
+        query_kwargs["where"] = where
+
+    results = col.query(**query_kwargs)
 
     out: List[SearchResult] = []
     for doc, meta, dist in zip(
@@ -106,14 +114,37 @@ def _query_collection(name: str, query: str, n_results: int) -> List[SearchResul
 
 
 def search(query: str, top_k: int = DEFAULT_TOP_K) -> List[SearchResult]:
-    """Query all collections and merge results, deduplicating by CIK."""
-    profile_results = _query_collection(PROFILES_COLLECTION, query, top_k)
+    """Query all collections and merge results, deduplicating by CIK.
+
+    Applies fiscal-year filters to exclude old/defunct companies:
+    - Snapshots: fy >= current_year - FISCAL_YEAR_LOOKBACK
+    - Profiles: most_recent_fy >= current_year - FISCAL_YEAR_LOOKBACK
+    - Descriptions: only kept if the CIK also appears in a passing profile/snapshot
+    """
+    min_year = datetime.date.today().year - FISCAL_YEAR_LOOKBACK
+
+    snapshot_filter = {"fy": {"$gte": min_year}}
+    profile_filter = {"most_recent_fy": {"$gte": min_year}}
+
+    profile_results = _query_collection(
+        PROFILES_COLLECTION, query, top_k, where=profile_filter
+    )
     desc_results = _query_collection(DESCRIPTIONS_COLLECTION, query, top_k)
-    snapshot_results = _query_collection(SNAPSHOTS_COLLECTION, query, top_k)
+    snapshot_results = _query_collection(
+        SNAPSHOTS_COLLECTION, query, top_k, where=snapshot_filter
+    )
+
+    # CIKs that passed the year filter (profiles + snapshots)
+    valid_ciks = set(r.cik for r in profile_results) | set(
+        r.cik for r in snapshot_results
+    )
 
     # Merge profiles + description results: best (lowest distance) per CIK
     seen_profiles: dict[str, SearchResult] = {}
     for r in profile_results + desc_results:
+        # Only include descriptions if their CIK passed the year filter elsewhere
+        if r.doc_type == "company_description" and r.cik not in valid_ciks:
+            continue
         if r.cik not in seen_profiles or r.distance < seen_profiles[r.cik].distance:
             seen_profiles[r.cik] = r
 
@@ -125,6 +156,8 @@ def search(query: str, top_k: int = DEFAULT_TOP_K) -> List[SearchResult]:
     # Also gather description docs indexed separately (to attach after profile)
     desc_by_cik: dict[str, SearchResult] = {}
     for r in desc_results:
+        if r.cik not in valid_ciks:
+            continue
         if r.cik not in desc_by_cik or r.distance < desc_by_cik[r.cik].distance:
             desc_by_cik[r.cik] = r
 

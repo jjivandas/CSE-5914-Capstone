@@ -5,6 +5,11 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+class ChatHistoryMessage(BaseModel):
+    role: str = Field(..., description="'user' or 'assistant'")
+    content: str = Field(..., description="Message text")
+
+
 class RecommendationRequest(BaseModel):
     query: str = Field(..., min_length=1, description="Natural-language stock query")
     topK: Optional[int] = Field(
@@ -12,6 +17,10 @@ class RecommendationRequest(BaseModel):
         ge=1,
         le=20,
         description="Maximum number of companies to surface",
+    )
+    conversationHistory: Optional[List[ChatHistoryMessage]] = Field(
+        default=None,
+        description="Recent conversation messages for multi-turn context (max 10)",
     )
 
 

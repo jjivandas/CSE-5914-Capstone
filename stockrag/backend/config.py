@@ -74,3 +74,4 @@ SNAPSHOTS_COLLECTION = "annual_snapshots"
 FINNHUB_API_KEY = settings.finnhub_api_key
 
 DESCRIPTIONS_COLLECTION = "company_descriptions"
+FISCAL_YEAR_LOOKBACK = int(_get_env("FISCAL_YEAR_LOOKBACK", default="5"))

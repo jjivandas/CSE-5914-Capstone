@@ -116,6 +116,12 @@ def _map_sources_to_recommendations(docs: list[vector_db.SearchResult]) -> list[
             if not rec.ocfMargin and ocf_val is not None:
                 rec.ocfMargin = f"{ocf_val / revenue * 100:.1f}%"
 
+        if not rec.currentRatio:
+            current_assets = _safe_float(fin.get("current_assets"))
+            current_liabs = _safe_float(fin.get("current_liabilities"))
+            if current_assets and current_liabs and current_liabs > 0:
+                rec.currentRatio = f"{current_assets / current_liabs:.2f}x"
+
         recommendations.append(rec)
     return recommendations
 
@@ -165,7 +171,11 @@ async def get_stats() -> StatsResponse:
 @router.post("/recommendations", response_model=RecommendationResponse)
 async def get_recommendations(request: RecommendationRequest) -> RecommendationResponse:
     try:
-        message, docs = pipeline.run(query=request.query, top_k=request.topK or 5)
+        message, docs = pipeline.run(
+            query=request.query,
+            top_k=request.topK or 5,
+            conversation_history=request.conversationHistory,
+        )
         recs = _map_sources_to_recommendations(docs)
 
         # Fetch live prices from Finnhub (parallel, non-blocking)

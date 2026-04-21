@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { fetchRecommendations } from "../api/client";
 import type {
+  ChatHistoryMessage,
   ChatMessage,
   RecommendationResponse,
   Role,
@@ -45,6 +46,18 @@ function createAssistantTextMsg(text: string): ChatMessage {
     createdAt: Date.now(),
     content: { text },
   };
+}
+
+function buildHistory(messages: ChatMessage[]): ChatHistoryMessage[] | undefined {
+  const history: ChatHistoryMessage[] = messages
+    .slice(-10)
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.role === "user" ? (m.text || "") : (m.content?.text || ""),
+    }))
+    .filter((m) => m.content.length > 0);
+
+  return history.length > 0 ? history : undefined;
 }
 
 // --- Hook ---
@@ -92,8 +105,14 @@ export function useChat() {
       addMessage(userMsg);
       setIsLoading(true);
 
+      // Build conversation history from existing messages
+      const conversationHistory = buildHistory(messages);
+
       try {
-        const resp = await fetchRecommendations({ query: text });
+        const resp = await fetchRecommendations({
+          query: text,
+          conversationHistory,
+        });
         handleSuccess(userMsg.id, resp);
       } catch {
         handleFailure(userMsg.id);
@@ -101,7 +120,7 @@ export function useChat() {
         setIsLoading(false);
       }
     },
-    [handleSuccess, handleFailure],
+    [messages, handleSuccess, handleFailure],
   );
 
   return {
