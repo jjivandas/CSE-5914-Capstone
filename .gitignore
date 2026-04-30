@@ -24,6 +24,7 @@ stockrag/chroma_db/
 
 # Codex
 stockrag/.codex
+.claude
 
 # Misc
 *.png

@@ -1,0 +1,9 @@
+{
+  "name": "cse-5914-capstone",
+  "private": true,
+  "version": "0.0.0",
+  "description": "StockRAG monorepo — cold-start orchestrator for backend + frontend.",
+  "scripts": {
+    "cold-start": "node scripts/cold-start.mjs"
+  }
+}
