@@ -11,11 +11,21 @@
 //      and tears both down cleanly on Ctrl-C.
 
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output, platform } from "node:process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { pipeline } from "node:stream/promises";
+import { createHash } from "node:crypto";
 import http from "node:http";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -33,6 +43,13 @@ const VENV_PIP = join(VENV_BIN, IS_WIN ? "pip.exe" : "pip");
 
 const BACKEND_PORT = Number(process.env.API_PORT ?? 8000);
 const FRONTEND_PORT = Number(process.env.VITE_PORT ?? 5173);
+
+// Public Hugging Face dataset hosting the prebuilt Chroma snapshot. Override
+// at runtime with CHROMA_DB_URL=… in the shell or stockrag/.env (set to empty
+// string to skip the download and just warn). Resolved inside bootstrapChroma()
+// so values from stockrag/.env (loaded by ensureEnvFile) are honored.
+const DEFAULT_CHROMA_DB_URL =
+  "https://huggingface.co/datasets/KrishPatel0111/stockrag-chroma-db/resolve/main/chroma_db.tar.gz";
 
 const CYAN = "\x1b[36m";
 const GREEN = "\x1b[32m";
@@ -100,6 +117,20 @@ function setupVenv(python) {
   }
   log("Upgrading pip and installing backend requirements (this can take a few minutes)…");
   run(VENV_PYTHON, ["-m", "pip", "install", "--upgrade", "pip"]);
+  // On Linux, the default PyPI torch wheel pulls ~4 GB of bundled CUDA libs that
+  // we don't need — sentence-transformers runs CPU-only here. Pre-install the
+  // CPU wheel so requirements.txt resolution is satisfied without GPU torch.
+  // Default torch on macOS (CPU/MPS) and Windows (CPU) is already fine.
+  if (platform === "linux") {
+    log("Installing CPU-only torch (avoids ~4 GB of CUDA libs)…");
+    run(VENV_PIP, [
+      "install",
+      "--upgrade",
+      "torch",
+      "--index-url",
+      "https://download.pytorch.org/whl/cpu",
+    ]);
+  }
   run(VENV_PIP, ["install", "-r", join(BACKEND, "requirements.txt")]);
   ok("Backend dependencies installed.");
 }
@@ -191,6 +222,12 @@ async function ensureEnvFile() {
   }
   writeFileSync(ENV_FILE, lines.join("\n") + "\n");
   ok(`Wrote ${ENV_FILE}.`);
+
+  // Surface .env values to the rest of cold-start so things like CHROMA_DB_URL
+  // set in stockrag/.env are honored (shell env still wins — we only fill blanks).
+  for (const [k, v] of Object.entries(existing)) {
+    if (process.env[k] === undefined && v !== "") process.env[k] = v;
+  }
 }
 
 function checkChromaData() {
@@ -204,6 +241,63 @@ function checkChromaData() {
   } else {
     ok("Chroma vector store has data.");
   }
+}
+
+async function bootstrapChroma() {
+  const url =
+    process.env.CHROMA_DB_URL !== undefined ? process.env.CHROMA_DB_URL : DEFAULT_CHROMA_DB_URL;
+  const shaUrl = process.env.CHROMA_DB_SHA256_URL ?? (url ? `${url}.sha256` : "");
+
+  // Empty CHROMA_DB_URL = explicit opt-out; just warn like the old behavior.
+  if (!url) return checkChromaData();
+
+  if (!existsSync(CHROMA_DIR)) mkdirSync(CHROMA_DIR, { recursive: true });
+  const existing = readdirSync(CHROMA_DIR).filter((f) => f !== ".gitkeep");
+  if (existing.length > 0) {
+    ok("Chroma vector store has data.");
+    return;
+  }
+
+  log(`Downloading Chroma snapshot from ${url}…`);
+  const tarPath = join(STOCKRAG, "chroma_db.tar.gz");
+
+  const shaRes = await fetch(shaUrl, { redirect: "follow" });
+  if (!shaRes.ok) throw new Error(`fetch ${shaUrl} -> ${shaRes.status}`);
+  const expected = (await shaRes.text()).trim().split(/\s+/)[0];
+
+  const tarRes = await fetch(url, { redirect: "follow" });
+  if (!tarRes.ok) throw new Error(`fetch ${url} -> ${tarRes.status}`);
+  const totalBytes = Number(tarRes.headers.get("content-length") ?? 0);
+  if (totalBytes) log(`  ↳ size: ${(totalBytes / 1024 / 1024).toFixed(1)} MB`);
+
+  const hash = createHash("sha256");
+  try {
+    await pipeline(
+      tarRes.body,
+      async function* (src) {
+        for await (const chunk of src) {
+          hash.update(chunk);
+          yield chunk;
+        }
+      },
+      createWriteStream(tarPath),
+    );
+  } catch (err) {
+    try { unlinkSync(tarPath); } catch {}
+    throw err;
+  }
+
+  const actual = hash.digest("hex");
+  if (actual !== expected) {
+    try { unlinkSync(tarPath); } catch {}
+    throw new Error(`SHA256 mismatch — expected ${expected}, got ${actual}`);
+  }
+  ok("Verified SHA256 OK.");
+
+  run("tar", ["-xzf", tarPath, "-C", STOCKRAG]);
+  unlinkSync(tarPath);
+  const sizeMb = totalBytes ? `~${(totalBytes / 1024 / 1024).toFixed(0)} MB` : "ready";
+  ok(`Chroma vector store ready (${sizeMb}).`);
 }
 
 function waitForHttp(port, path = "/", timeoutMs = 60_000) {
@@ -288,7 +382,7 @@ async function main() {
   setupVenv(python);
   setupFrontend();
   await ensureEnvFile();
-  checkChromaData();
+  await bootstrapChroma();
   await startServices();
 
   console.log("");

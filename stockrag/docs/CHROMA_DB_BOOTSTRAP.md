@@ -1,81 +1,66 @@
 # Bootstrapping `chroma_db/` for cold-start
 
-## Why cold-start skips this
-- Raw SEC data is ~27 GB, gitignored, no fetch script in repo.
-- Parse + embed takes hours.
-- `chroma_db/` is gitignored too, so a fresh clone has nothing to serve.
-- Fix: ship a pre-built snapshot as a GitHub Release asset, have cold-start pull it.
+`stockrag/chroma_db/` is gitignored (~511 MB raw, ~250 MB gzipped) and rebuilding
+it from raw EDGAR data takes hours. To make a fresh clone usable, we host a
+prebuilt snapshot on a public Hugging Face dataset and have `npm run cold-start`
+pull it down on first run.
 
-## Publish a snapshot (run on the machine with data)
+- Dataset: <https://huggingface.co/datasets/KrishPatel0111/stockrag-chroma-db>
+- Tarball URL (no auth):
+  `https://huggingface.co/datasets/KrishPatel0111/stockrag-chroma-db/resolve/main/chroma_db.tar.gz`
+- Checksum URL: same path with `.sha256` appended.
+
+## How cold-start uses it
+
+`scripts/cold-start.mjs` runs `bootstrapChroma()`:
+
+1. If `stockrag/chroma_db/` already has data, it's a no-op.
+2. Otherwise it streams the tarball, verifies the SHA256 mid-stream against the
+   `.sha256` file, runs `tar -xzf` into `stockrag/`, then deletes the tarball.
+
+A failed checksum or download leaves no partial files behind.
+
+## Re-publishing a fresh snapshot
+
+Run on the machine that has a populated `stockrag/chroma_db/` (Krish's box,
+typically). You need `huggingface_hub` installed and `hf auth login` done with a
+write token.
 
 ```bash
-# 1. Package
+# from repo root
 tar -czf chroma_db.tar.gz -C stockrag chroma_db
 shasum -a 256 chroma_db.tar.gz | tee chroma_db.tar.gz.sha256
 
-# 2. Release (tag = date)
-TAG=chroma-db-v$(date +%Y%m%d)
-gh release create "$TAG" chroma_db.tar.gz chroma_db.tar.gz.sha256 \
-  --title "Chroma DB snapshot $TAG" --notes "SEC fact index $(date -u +%F)"
+hf upload KrishPatel0111/stockrag-chroma-db chroma_db.tar.gz       --repo-type dataset
+hf upload KrishPatel0111/stockrag-chroma-db chroma_db.tar.gz.sha256 --repo-type dataset
+
+rm chroma_db.tar.gz chroma_db.tar.gz.sha256
 ```
 
-- Tarball must stay under 2 GB (GitHub asset cap). Switch to `--zstd` if close.
-- Re-run on every re-ingest; bump the date tag.
+The dataset URL stays the same, so anyone running cold-start after this picks
+up the new snapshot automatically. Re-run after every re-ingest.
 
-## Wire into cold-start
+Verify the upload from a clean shell (no auth):
 
-Replace `checkChromaData()` in `scripts/cold-start.mjs` with the snippet below; swap the call in `main()` to `await bootstrapChroma()`.
-
-```js
-import { unlinkSync, createWriteStream } from "node:fs";
-import { pipeline } from "node:stream/promises";
-import { createHash } from "node:crypto";
-
-const RELEASE_REPO = "OWNER/REPO";  // fill in
-const RELEASE_TAG = process.env.CHROMA_DB_RELEASE_TAG ?? "latest";
-
-async function fetchAsset(name) {
-  const base = `https://github.com/${RELEASE_REPO}/releases`;
-  const url = RELEASE_TAG === "latest"
-    ? `${base}/latest/download/${name}`
-    : `${base}/download/${RELEASE_TAG}/${name}`;
-  const res = await fetch(url, { redirect: "follow" });
-  if (!res.ok) throw new Error(`fetch ${url} -> ${res.status}`);
-  return res;
-}
-
-async function bootstrapChroma() {
-  if (!existsSync(CHROMA_DIR)) mkdirSync(CHROMA_DIR, { recursive: true });
-  if (readdirSync(CHROMA_DIR).filter((f) => f !== ".gitkeep").length > 0) {
-    ok("Chroma vector store has data.");
-    return;
-  }
-  log(`Downloading chroma snapshot (${RELEASE_TAG})…`);
-  const tarPath = join(STOCKRAG, "chroma_db.tar.gz");
-  const [tarRes, sumRes] = await Promise.all([
-    fetchAsset("chroma_db.tar.gz"),
-    fetchAsset("chroma_db.tar.gz.sha256"),
-  ]);
-  const expected = (await sumRes.text()).trim().split(/\s+/)[0];
-  const hash = createHash("sha256");
-  await pipeline(tarRes.body, async function* (src) {
-    for await (const c of src) { hash.update(c); yield c; }
-  }, createWriteStream(tarPath));
-  if (hash.digest("hex") !== expected) throw new Error("checksum mismatch");
-  run("tar", ["-xzf", tarPath, "-C", STOCKRAG]);
-  unlinkSync(tarPath);
-  ok("Chroma vector store ready.");
-}
+```bash
+URL=https://huggingface.co/datasets/KrishPatel0111/stockrag-chroma-db/resolve/main/chroma_db.tar.gz
+curl -sL -o /tmp/check.tar.gz "$URL"
+shasum -a 256 /tmp/check.tar.gz   # must match the uploaded .sha256
 ```
 
-## Usage
+## Overrides
 
-- Default: `npm run cold-start` pulls `latest`.
-- Pin a tag: `CHROMA_DB_RELEASE_TAG=chroma-db-v20260301 npm run cold-start`.
-- Force re-fetch: `rm -rf stockrag/chroma_db && npm run cold-start`.
+Set in the shell or `stockrag/.env`:
+
+| Var                      | Effect                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `CHROMA_DB_URL`          | Use a different tarball URL (e.g. a personal HF dataset for a custom index). |
+| `CHROMA_DB_SHA256_URL`   | Override the checksum URL (defaults to `${CHROMA_DB_URL}.sha256`).           |
+| `CHROMA_DB_URL=` (empty) | Skip the download entirely; just warn if the store is empty.                 |
 
 ## Watch out for
 
-- Public repo = public asset. Fine for SEC filings, not for anything private.
-- Schema change (embedding model, collection names) → snapshot incompatible. Cut a new tag.
-- >2 GB → split assets or move to S3/GCS.
+- Schema changes (different embedding model, collection names, sentence-transformers version) make the snapshot incompatible — re-publish with a fresh upload. The URL is unversioned, so the old snapshot is overwritten.
+- Dataset visibility must stay **public** for unauthenticated cold-start to work.
+- HF outages or rate limits will fail cold-start with a clear error; re-run, or set `CHROMA_DB_URL=` to skip and start the API empty.
+- Tarball size is bounded by HF's per-file limits (effectively unbounded via LFS), but bigger snapshots = slower cold-start.
